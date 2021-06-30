@@ -1,29 +1,25 @@
-package com.andriod.simplenote;
+package com.andriod.simplenote
 
-import android.app.Application;
-import android.content.Context;
+import android.app.Application
+import android.content.Context
+import com.andriod.simplenote.data.BaseDataManager
+import com.andriod.simplenote.data.FirestoreDataManager
+import com.andriod.simplenote.data.PreferencesDataManager
 
-import com.andriod.simplenote.data.BaseDataManager;
-import com.andriod.simplenote.data.FirestoreDataManager;
-import com.andriod.simplenote.data.PreferencesDataManager;
+class NoteApplication : Application() {
+    lateinit var dataManager: BaseDataManager
+        private set
 
-public class NoteApplication extends Application {
+    override fun onCreate() {
+        super.onCreate()
 
-    private static final String SHARED_PREFERENCES_NOTES = "SHARED_PREFERENCES_NOTES";
-
-    private BaseDataManager dataManager;
-
-    @Override
-    public void onCreate() {
-        super.onCreate();
-
-//        dataManager = new PreferencesDataManager(
-//                getApplicationContext()
-//                        .getSharedPreferences(SHARED_PREFERENCES_NOTES, Context.MODE_PRIVATE));
-        dataManager = new FirestoreDataManager();
+//        dataManager = PreferencesDataManager(
+//            applicationContext
+//                .getSharedPreferences(SHARED_PREFERENCES_NOTES, Context.MODE_PRIVATE));
+        dataManager = FirestoreDataManager()
     }
 
-    public BaseDataManager getDataManager() {
-        return dataManager;
+    companion object {
+        private const val SHARED_PREFERENCES_NOTES = "SHARED_PREFERENCES_NOTES"
     }
 }

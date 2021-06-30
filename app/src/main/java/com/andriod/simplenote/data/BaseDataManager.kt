@@ -1,39 +1,31 @@
-package com.andriod.simplenote.data;
+package com.andriod.simplenote.data
 
-import com.andriod.simplenote.entity.Note;
+import com.andriod.simplenote.entity.Note
+import java.util.*
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+abstract class BaseDataManager {
+    private var subscribers: MutableSet<Runnable> = HashSet()
+    protected var notes: MutableMap<String, Note> = HashMap()
+    internal var user: String? = null
 
-public abstract class BaseDataManager {
-    protected Set<Runnable> subscribers = new HashSet<>();
-    protected final Map<String, Note> notes = new HashMap<>();
-    protected String user;
+    abstract val data: Map<String, Note>
+    abstract fun updateData(note: Note)
+    abstract fun deleteData(note: Note)
+    abstract fun deleteAll()
 
-    abstract public Map<String, Note> getData();
-
-    abstract public void updateData(Note note);
-
-    abstract public void deleteData(Note note);
-
-    abstract public void deleteAll();
-
-    protected void notifySubscribers() {
-        for (Runnable subscriber : subscribers) {
-            subscriber.run();
+    protected fun notifySubscribers() {
+        for (subscriber in subscribers) {
+            subscriber.run()
         }
     }
 
-    public void subscribe(Runnable subscriber) {
-        subscribers.add(subscriber);
+    fun subscribe(subscriber: Runnable) {
+        subscribers.add(subscriber)
     }
 
-    public void unSubscribe(Runnable subscriber) {
-        subscribers.remove(subscriber);
+    fun unSubscribe(subscriber: Runnable) {
+        subscribers.remove(subscriber)
     }
 
-    public void setUser(String user) {
-    }
+    open fun setUser(user: String?) {}
 }

@@ -1,143 +1,127 @@
-package com.andriod.simplenote.adapter;
+package com.andriod.simplenote.adapter
 
-import android.view.ContextMenu;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.TextView;
-import android.widget.ToggleButton;
+import android.view.ContextMenu
+import android.view.ContextMenu.ContextMenuInfo
+import android.view.LayoutInflater
+import android.view.View
+import android.view.View.OnCreateContextMenuListener
+import android.view.ViewGroup
+import android.widget.CompoundButton
+import android.widget.TextView
+import android.widget.ToggleButton
+import androidx.recyclerview.widget.RecyclerView
+import com.andriod.simplenote.R
+import com.andriod.simplenote.adapter.ListNotesAdapter.BaseViewHolder
+import com.andriod.simplenote.entity.Note
+import com.andriod.simplenote.entity.Note.NoteType
 
-import androidx.annotation.NonNull;
-import androidx.recyclerview.widget.RecyclerView;
+class ListNotesAdapter : RecyclerView.Adapter<BaseViewHolder>() {
+    private var notes: List<Note> = ArrayList()
+    private var listener: OnItemClickListener? = null
+    lateinit var currentNote: Note
+        private set
 
-import com.andriod.simplenote.R;
-import com.andriod.simplenote.entity.Note;
-
-import java.util.List;
-
-public class ListNotesAdapter extends RecyclerView.Adapter<ListNotesAdapter.BaseViewHolder> {
-    private final static int VIDEO_TYPE = Note.NoteType.Video.getValue();
-    private final static int HTTP_TYPE = Note.NoteType.HTTP.getValue();
-
-    private List<Note> notes;
-    private OnItemClickListener listener;
-
-    private Note currentNote;
-
-    public void setOnItemClickListener(OnItemClickListener listener) {
-        this.listener = listener;
+    fun setOnItemClickListener(listener: OnItemClickListener?) {
+        this.listener = listener
     }
 
-    public interface OnItemClickListener {
-        void onItemClick(Note note);
-        void onFavorite(Note note);
+    interface OnItemClickListener {
+        fun onItemClick(note: Note)
+        fun onFavorite(note: Note)
     }
 
-    @NonNull
-    @Override
-    public BaseViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        if (viewType == VIDEO_TYPE) {
-            return new VideoViewHolder(parent, listener);
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): BaseViewHolder {
+        return if (viewType == VIDEO_TYPE) {
+            VideoViewHolder(parent, listener)
         } else if (viewType == HTTP_TYPE) {
-            return new HttpViewHolder(parent, listener);
+            HttpViewHolder(parent, listener)
         } else {
-            return new TextViewHolder(parent, listener);
+            TextViewHolder(parent, listener)
         }
     }
 
-    @Override
-    public void onBindViewHolder(@NonNull BaseViewHolder holder, int position) {
-        holder.bind(notes.get(position));
+    override fun onBindViewHolder(holder: BaseViewHolder, position: Int) {
+        holder.bind(notes[position])
     }
 
-    @Override
-    public int getItemViewType(int position) {
-        return notes.get(position).getType().getValue();
+    override fun getItemViewType(position: Int): Int {
+        return notes[position].type.value
     }
 
-    @Override
-    public int getItemCount() {
-        return notes.size();
+    override fun getItemCount(): Int {
+        return notes.size
     }
 
-    public Note getCurrentNote() {
-        return currentNote;
-    }
+    abstract inner class BaseViewHolder(itemView: View, listener: OnItemClickListener?) :
+        RecyclerView.ViewHolder(itemView), OnCreateContextMenuListener {
+        protected lateinit var note: Note
+        protected val toggleFavorite = itemView.findViewById<ToggleButton>(R.id.toggle_favorite)
+        protected val textViewHeader = itemView.findViewById<TextView>(R.id.text_view_header)
+        protected val textViewContent = itemView.findViewById<TextView>(R.id.text_view_content)
+        private var isBinding = false
 
-    abstract class BaseViewHolder extends RecyclerView.ViewHolder implements View.OnCreateContextMenuListener {
-        protected Note note;
-        protected final ToggleButton toggleFavorite = itemView.findViewById(R.id.toggle_favorite);
+        fun bind(note: Note) {
+            isBinding = true
+            this.note = note
+            toggleFavorite.isChecked = note.isFavorite
+            textViewHeader.text = note.header
+            textViewContent.text = note.shortContent
+            isBinding = false
+        }
 
-        protected final TextView textViewHeader = itemView.findViewById(R.id.text_view_header);
-        protected final TextView textViewContent = itemView.findViewById(R.id.text_view_content);
-        private boolean isBinding;
+        override fun onCreateContextMenu(menu: ContextMenu, v: View, menuInfo: ContextMenuInfo) {
+            menu.add(R.string.delete_menu_item)
+            currentNote = note
+        }
 
-        public BaseViewHolder(@NonNull View itemView, OnItemClickListener listener) {
-            super(itemView);
-
-            itemView.setOnClickListener(v -> {
-                if (listener != null) {
-                    listener.onItemClick(note);
-                }
-            });
-
-            toggleFavorite.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                note.setFavorite(isChecked);
+        init {
+            itemView.setOnClickListener { v: View? -> listener?.onItemClick(note) }
+            toggleFavorite.setOnCheckedChangeListener { _: CompoundButton?, isChecked: Boolean ->
+                note.isFavorite = isChecked
                 if (listener != null && !isBinding) {
-                    listener.onFavorite(note);
+                    listener.onFavorite(note)
                 }
-            });
-
-            itemView.setOnCreateContextMenuListener(this);
-        }
-
-        public void bind(Note note) {
-            isBinding = true;
-            this.note = note;
-            toggleFavorite.setChecked(note.isFavorite());
-            textViewHeader.setText(note.getHeader());
-            textViewContent.setText(note.getShortContent());
-            isBinding = false;
-        }
-
-        @Override
-        public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
-            menu.add(R.string.delete_menu_item);
-            currentNote = note;
+            }
+            itemView.setOnCreateContextMenuListener(this)
         }
     }
 
-    class TextViewHolder extends BaseViewHolder {
-
-        public TextViewHolder(@NonNull ViewGroup parent, OnItemClickListener listener) {
-            super(LayoutInflater.from(parent.getContext()).inflate(R.layout.item_note_text, parent, false), listener);
-        }
-
-        @Override
-        public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
-            super.onCreateContextMenu(menu, v, menuInfo);
-            menu.setHeaderTitle(String.format("%s: %s",
-                    v.getContext().getResources().getString(R.string.text_note),
-                    currentNote.getHeader()));
-        }
-    }
-
-    class VideoViewHolder extends BaseViewHolder {
-
-        public VideoViewHolder(@NonNull ViewGroup parent, OnItemClickListener listener) {
-            super(LayoutInflater.from(parent.getContext()).inflate(R.layout.item_note_video, parent, false), listener);
+    internal inner class TextViewHolder(parent: ViewGroup, listener: OnItemClickListener?) :
+        BaseViewHolder(
+            LayoutInflater.from(parent.context).inflate(R.layout.item_note_text, parent, false),
+            listener
+        ) {
+        override fun onCreateContextMenu(menu: ContextMenu, v: View, menuInfo: ContextMenuInfo) {
+            super.onCreateContextMenu(menu, v, menuInfo)
+            menu.setHeaderTitle(
+                String.format(
+                    "%s: %s",
+                    v.context.resources.getString(R.string.text_note),
+                    currentNote.header
+                )
+            )
         }
     }
 
-    class HttpViewHolder extends BaseViewHolder {
+    internal inner class VideoViewHolder(parent: ViewGroup, listener: OnItemClickListener?) :
+        BaseViewHolder(
+            LayoutInflater.from(parent.context).inflate(R.layout.item_note_video, parent, false),
+            listener
+        )
 
-        public HttpViewHolder(@NonNull ViewGroup parent, OnItemClickListener listener) {
-            super(LayoutInflater.from(parent.getContext()).inflate(R.layout.item_note_http, parent, false), listener);
-        }
+    internal inner class HttpViewHolder(parent: ViewGroup, listener: OnItemClickListener?) :
+        BaseViewHolder(
+            LayoutInflater.from(parent.context).inflate(R.layout.item_note_http, parent, false),
+            listener
+        )
+
+    fun setData(notes: List<Note>) {
+        this.notes = notes
+        notifyDataSetChanged()
     }
 
-    public void setData(List<Note> notes) {
-        this.notes = notes;
-        notifyDataSetChanged();
+    companion object {
+        private val VIDEO_TYPE = NoteType.Video.value
+        private val HTTP_TYPE = NoteType.HTTP.value
     }
 }

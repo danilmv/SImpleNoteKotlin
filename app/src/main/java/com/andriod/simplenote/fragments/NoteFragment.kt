@@ -1,142 +1,117 @@
-package com.andriod.simplenote.fragments;
+package com.andriod.simplenote.fragments
 
-import android.content.Context;
-import android.net.Uri;
-import android.os.Bundle;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-import android.webkit.WebView;
-import android.webkit.WebViewClient;
-import android.widget.ArrayAdapter;
-import android.widget.EditText;
-import android.widget.FrameLayout;
-import android.widget.MediaController;
-import android.widget.Spinner;
-import android.widget.ToggleButton;
-import android.widget.VideoView;
+import android.content.Context
+import android.net.Uri
+import android.os.Bundle
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.webkit.WebView
+import android.webkit.WebViewClient
+import android.widget.*
+import androidx.fragment.app.Fragment
+import com.andriod.simplenote.R
+import com.andriod.simplenote.entity.Note
+import com.andriod.simplenote.entity.Note.NoteType
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.fragment.app.Fragment;
-
-import com.andriod.simplenote.R;
-import com.andriod.simplenote.entity.Note;
-
-import java.util.Arrays;
-import java.util.List;
-
-import static com.andriod.simplenote.entity.Note.NoteType.*;
-
-public class NoteFragment extends Fragment {
-
-    private static final String NOTE_EXTRA_KEY = "NOTE_EXTRA_KEY";
-
-    private Note note;
-
-    private EditText editTextHeader;
-    private EditText editTextContent;
-    private Spinner spinner;
-
-    public static NoteFragment newInstance(Note note) {
-        NoteFragment instance = new NoteFragment();
-        Bundle bundle = new Bundle();
-        bundle.putParcelable(NOTE_EXTRA_KEY, note);
-        instance.setArguments(bundle);
-
-        return instance;
+class NoteFragment : Fragment() {
+    private lateinit var note: Note
+    private lateinit var editTextHeader: EditText
+    private lateinit var editTextContent: EditText
+    private lateinit var spinner: Spinner
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?,
+    ): View? {
+        return inflater.inflate(R.layout.fragment_note, container, false)
     }
 
-    @Nullable
-    @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.fragment_note, container, false);
-    }
-
-    @Override
-    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
-
-        if (getArguments() != null) {
-            note = getArguments().getParcelable(NOTE_EXTRA_KEY);
-            showContent(view);
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        arguments.let {
+            note = arguments?.getParcelable(NOTE_EXTRA_KEY)!!
+            showContent(view)
         }
-
-        editTextHeader = view.findViewById(R.id.edit_text_header);
-        editTextHeader.setText(note.getHeader());
-        ToggleButton toggleButtonFavorite = view.findViewById(R.id.toggle_favorite);
-        toggleButtonFavorite.setChecked(note.isFavorite());
-
-        view.findViewById(R.id.button_save_note).setOnClickListener(v -> {
-            if (getController() != null) {
-                note.setHeader(editTextHeader.getText().toString());
-                note.setFavorite(toggleButtonFavorite.isChecked());
-                note.setType(valueOf(spinner.getSelectedItem().toString()));
-                note.setContent(editTextContent.getText().toString());
-                getController().noteSaved(note);
+        editTextHeader = view.findViewById(R.id.edit_text_header)
+        editTextHeader.setText(note.header)
+        val toggleButtonFavorite = view.findViewById<ToggleButton>(R.id.toggle_favorite)
+        toggleButtonFavorite.isChecked = note.isFavorite
+        view.findViewById<View>(R.id.button_save_note).setOnClickListener {
+            if (controller != null) {
+                note.header = editTextHeader.text.toString()
+                note.isFavorite = toggleButtonFavorite.isChecked
+                note.type = NoteType.valueOf(spinner.selectedItem.toString())
+                note.content = editTextContent.text.toString()
+                controller!!.noteSaved(note)
             }
-        });
-
-        spinner = view.findViewById(R.id.spinner_note_type);
-        List<Note.NoteType> spinnerValues = Arrays.asList(values());
-        ArrayAdapter<Note.NoteType> adapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_dropdown_item, spinnerValues);
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinner.setAdapter(adapter);
-        spinner.setSelection(adapter.getPosition(note.getType()));
-
-        editTextContent = view.findViewById(R.id.edit_text_content);
-        editTextContent.setText(note.getContent());
+        }
+        spinner = view.findViewById(R.id.spinner_note_type)
+        val spinnerValues = listOf(*NoteType.values())
+        val adapter =
+            ArrayAdapter(requireContext(),
+                android.R.layout.simple_spinner_dropdown_item,
+                spinnerValues)
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spinner.adapter = adapter
+        spinner.setSelection(adapter.getPosition(note.type))
+        editTextContent = view.findViewById(R.id.edit_text_content)
+        editTextContent.setText(note.content)
     }
 
-    private void showContent(View view) {
-        FrameLayout container = view.findViewById(R.id.content_container);
-        container.removeAllViews();
-        String content = note.getContent();
-        if (content == null || content.isEmpty()) return;
-
-        switch (note.getType()) {
-            case Text:
-                break;
-            case Video:
-                VideoView videoView = new VideoView(getContext());
-                videoView.setVideoURI(Uri.parse(content));
-                videoView.setOnPreparedListener(mp -> {
-                    MediaController mediaController = new MediaController(getContext());
-                    videoView.setMediaController(mediaController);
-                    mediaController.setAnchorView(videoView);
-                });
-                container.addView(videoView);
-                videoView.start();
-                break;
-
-            case HTTP:
-                WebView webView = new WebView(getContext());
-                webView.setWebViewClient(new WebViewClient());
-                webView.setInitialScale(70);
-                webView.getSettings().setLoadWithOverviewMode(true);
-                webView.getSettings().setUseWideViewPort(true);
-                container.addView(webView);
-                webView.loadUrl(content);
-                break;
-            default:
-
+    private fun showContent(view: View) {
+        val container = view.findViewById<FrameLayout>(R.id.content_container)
+        container.removeAllViews()
+        val content = note.content
+        if (content == null || content.isEmpty()) return
+        when (note.type) {
+            NoteType.Text -> {
+            }
+            NoteType.Video -> {
+                val videoView = VideoView(context)
+                videoView.setVideoURI(Uri.parse(content))
+                videoView.setOnPreparedListener {
+                    val mediaController = MediaController(
+                        context
+                    )
+                    videoView.setMediaController(mediaController)
+                    mediaController.setAnchorView(videoView)
+                }
+                container.addView(videoView)
+                videoView.start()
+            }
+            NoteType.HTTP -> {
+                val webView = WebView(requireContext())
+                webView.webViewClient = WebViewClient()
+                webView.setInitialScale(70)
+                webView.settings.loadWithOverviewMode = true
+                webView.settings.useWideViewPort = true
+                container.addView(webView)
+                webView.loadUrl(content)
+            }
         }
     }
 
-    private Controller getController() {
-        return (Controller) getActivity();
+    private val controller: Controller?
+        get() = activity as Controller?
+
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        check(context is ListNotesFragment.Controller) { "Activity must implement Controller" }
     }
 
-    @Override
-    public void onAttach(@NonNull Context context) {
-        super.onAttach(context);
+    interface Controller {
+        fun noteSaved(note: Note)
+    }
 
-        if (!(context instanceof ListNotesFragment.Controller)) {
-            throw new IllegalStateException("Activity must implement Controller");
+    companion object {
+        private const val NOTE_EXTRA_KEY = "NOTE_EXTRA_KEY"
+        fun newInstance(note: Note?): NoteFragment {
+            val instance = NoteFragment()
+            val bundle = Bundle()
+            bundle.putParcelable(NOTE_EXTRA_KEY, note)
+            instance.arguments = bundle
+            return instance
         }
-    }
-
-    public interface Controller {
-        void noteSaved(Note note);
     }
 }

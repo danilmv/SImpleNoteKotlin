@@ -1,71 +1,58 @@
-package com.andriod.simplenote.data;
+package com.andriod.simplenote.data
 
-import android.content.SharedPreferences;
+import android.content.SharedPreferences
+import com.andriod.simplenote.entity.Note
+import com.andriod.simplenote.entity.Note.Companion.INIT_ID
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import java.util.*
 
-import com.andriod.simplenote.entity.Note;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
+class PreferencesDataManager(preferences: SharedPreferences) : BaseDataManager() {
+    private val gson = Gson()
+    private lateinit var sharedPreferences: SharedPreferences
 
-import java.lang.reflect.Type;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-
-public class PreferencesDataManager extends BaseDataManager {
-    private static final String LIST_NOTES_KEY = "LIST_NOTES_KEY";
-
-    private final Gson gson = new Gson();
-    private SharedPreferences sharedPreferences;
-
-    public PreferencesDataManager(SharedPreferences preferences) {
-        setSharedPreferences(preferences);
-
-        String stringData = sharedPreferences.getString(LIST_NOTES_KEY, null);
-        if (stringData != null && !stringData.isEmpty()) {
-            Type setType = new TypeToken<HashMap<String, Note>>() {
-            }.getType();
-            notes.putAll(gson.fromJson(stringData, setType));
-        }
+    fun setSharedPreferences(sharedPreferences: SharedPreferences) {
+        this.sharedPreferences = sharedPreferences
     }
 
-    public void setSharedPreferences(SharedPreferences sharedPreferences) {
-        this.sharedPreferences = sharedPreferences;
+    override val data: Map<String, Note>
+        get() = notes
+
+    override fun updateData(note: Note) {
+        val id = note.id
+        if (id == INIT_ID || id.isEmpty()) note.id = UUID.randomUUID().toString()
+        notes[note.id] = note
+        saveData()
     }
 
-    @Override
-    public Map<String,Note> getData() {
-        return notes;
+    override fun deleteData(note: Note) {
+        notes.remove(note.id)
+        saveData()
     }
 
-    @Override
-    public void updateData(Note note) {
-        if (note != null) {
-            String id = note.getId();
-            if (id == null || id.isEmpty()) note.setId(UUID.randomUUID().toString());
-
-            notes.put(note.getId(), note);
-        }
-        saveData();
+    override fun deleteAll() {
+        notes.clear()
+        saveData()
     }
 
-    @Override
-    public void deleteData(Note note) {
-        notes.remove(note.getId());
-        saveData();
-    }
-
-    @Override
-    public void deleteAll() {
-        notes.clear();
-        saveData();
-    }
-
-    private void saveData() {
+    private fun saveData() {
         sharedPreferences
-                .edit()
-                .putString(LIST_NOTES_KEY, gson.toJson(notes))
-                .apply();
+            .edit()
+            .putString(LIST_NOTES_KEY, gson.toJson(notes))
+            .apply()
+        notifySubscribers()
+    }
 
-        notifySubscribers();
+    companion object {
+        private const val LIST_NOTES_KEY = "LIST_NOTES_KEY"
+    }
+
+    init {
+        setSharedPreferences(preferences)
+        val stringData = sharedPreferences.getString(LIST_NOTES_KEY, null)
+        if (stringData != null && !stringData.isEmpty()) {
+            val setType = object : TypeToken<HashMap<String?, Note?>?>() {}.type
+            notes.putAll(gson.fromJson(stringData, setType))
+        }
     }
 }

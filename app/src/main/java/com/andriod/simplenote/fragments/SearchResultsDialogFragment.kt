@@ -1,131 +1,114 @@
-package com.andriod.simplenote.fragments;
+package com.andriod.simplenote.fragments
 
-import android.content.Context;
-import android.os.Build;
-import android.os.Bundle;
-import android.util.Log;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
+import android.content.Context
+import android.os.Build
+import android.os.Bundle
+import android.util.Log
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.andriod.simplenote.NoteApplication
+import com.andriod.simplenote.R
+import com.andriod.simplenote.adapter.SearchResultsAdapter
+import com.andriod.simplenote.data.BaseDataManager
+import com.andriod.simplenote.entity.Note
+import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import java.util.*
+import java.util.stream.Collectors
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-
-import com.andriod.simplenote.NoteApplication;
-import com.andriod.simplenote.R;
-import com.andriod.simplenote.adapter.SearchResultsAdapter;
-import com.andriod.simplenote.data.BaseDataManager;
-import com.andriod.simplenote.entity.Note;
-import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-public class SearchResultsDialogFragment extends BottomSheetDialogFragment {
-
-    private static final String ARGUMENTS_SEARCH_QUERY = "search_query";
-    private static final String TAG = "@@@SearchResults@";
-    private SearchResultsAdapter adapter;
-    private Map<String, Note> notes;
-    private BaseDataManager dataManager;
-    private String searchQuery;
-
-    @Nullable
-    @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.fragment_search_result, container, false);
+class SearchResultsDialogFragment : BottomSheetDialogFragment() {
+    private lateinit var adapter: SearchResultsAdapter
+    private var notes: Map<String, Note>? = null
+    private var dataManager: BaseDataManager? = null
+    private var searchQuery: String? = null
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?,
+    ): View? {
+        return inflater.inflate(R.layout.fragment_search_result, container, false)
     }
 
-    @Override
-    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
-        Log.d(TAG, "onViewCreated() called");
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        Log.d(TAG, "onViewCreated() called")
+        val recyclerView: RecyclerView = view.findViewById(R.id.recycler_view)
+        recyclerView.layoutManager = LinearLayoutManager(context)
+        adapter = SearchResultsAdapter()
 
-        RecyclerView recyclerView = view.findViewById(R.id.recycler_view);
-        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-
-        adapter = new SearchResultsAdapter();
-        adapter.setListener(note -> {
-            if (getController() != null) {
-                getController().showSearchNote(note);
+        adapter.setListener(object : SearchResultsAdapter.OnItemClickListener{
+            override fun onItemClick(note: Note) {
+                controller.let {
+                    controller?.showSearchNote(note)
+                }
             }
-        });
-        recyclerView.setAdapter(adapter);
-
-        showList();
+        })
+//        adapter.setListener({ note:Note -> controller.let { controller.showSearchNote(note) } })
+        recyclerView.adapter = adapter
+        showList()
     }
 
-    private void showList() {
-        Log.d(TAG, "showList() called");
-        if (getDataManager() != null) {
-            notes = getDataManager().getData();
+    private fun showList() {
+        Log.d(TAG, "showList() called")
+        val dataManager = getDataManager()
+        dataManager.let {
+            notes = getDataManager()?.data
         }
-
-        Log.d(TAG, String.format("showList(): dataManager=[%s]", dataManager));
-
-        Bundle arguments = getArguments();
-        if (arguments == null) return;
-        searchQuery = arguments.getString(ARGUMENTS_SEARCH_QUERY);
-
-        if (notes == null || searchQuery == null || searchQuery.isEmpty()) return;
-
-        List<Note> list;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            list = notes.values().stream()
-                    .filter(note -> note.checkSearch(searchQuery))
-                    .collect(Collectors.toList());
+        Log.d(TAG, String.format("showList(): dataManager=[%s]", dataManager))
+        val arguments = arguments ?: return
+        searchQuery = arguments.getString(ARGUMENTS_SEARCH_QUERY)
+        if (notes == null || searchQuery == null || searchQuery!!.isEmpty()) return
+        val list: List<Note>
+        list = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            notes!!.values.stream()
+                .filter { note: Note? -> note!!.checkSearch(searchQuery) }
+                .collect(Collectors.toList())
         } else {
-            list = new ArrayList<>(notes.values());
+            ArrayList(notes!!.values)
         }
-
-        Log.d(TAG, String.format("showList(): list.size=[%d]", list.size()));
-
-        adapter.setData(list);
+        Log.d(TAG, String.format("showList(): list.size=[%d]", list.size))
+        adapter.setData(list)
     }
 
-    @Override
-    public void onAttach(@NonNull Context context) {
-        Log.d(TAG, "onAttach() called");
-        super.onAttach(context);
-        if (!(context instanceof Controller)) {
-            throw new IllegalStateException("Activity must implement Controller");
-        }
+    override fun onAttach(context: Context) {
+        Log.d(TAG, "onAttach() called")
+        super.onAttach(context)
+        check(context is Controller) { "Activity must implement Controller" }
     }
 
-    private BaseDataManager getDataManager() {
-        if (getActivity() == null) return null;
+    private fun getDataManager(): BaseDataManager? {
+        if (activity == null) return null
         if (dataManager == null) {
-            NoteApplication application = (NoteApplication) requireActivity().getApplication();
-            dataManager = application.getDataManager();
+            val application = requireActivity().application as NoteApplication
+            dataManager = application.dataManager
         }
-
-        return dataManager;
+        return dataManager
     }
 
-    public void setSearchQuery(String searchQuery) {
-        Log.d(TAG, "setSearchQuery() called with: searchQuery = [" + searchQuery + "]");
-        this.searchQuery = searchQuery;
-        Bundle bundle = getArguments();
+    fun setSearchQuery(searchQuery: String) {
+        Log.d(TAG, "setSearchQuery() called with: searchQuery = [$searchQuery]")
+        this.searchQuery = searchQuery
+        var bundle = arguments
         if (bundle == null) {
-            bundle = new Bundle();
+            bundle = Bundle()
         }
-
-        bundle.clear();
-        bundle.putString(ARGUMENTS_SEARCH_QUERY, searchQuery);
-
-        setArguments(bundle);
-
-        showList();
+        bundle.clear()
+        bundle.putString(ARGUMENTS_SEARCH_QUERY, searchQuery)
+        arguments = bundle
+        showList()
     }
 
-    public interface Controller {
-        void showSearchNote(Note note);
+    interface Controller {
+        fun showSearchNote(note: Note)
     }
-    private Controller getController() {
-        return (Controller) getActivity();
+
+    private val controller: Controller?
+        get() = activity as Controller?
+
+    companion object {
+        private const val ARGUMENTS_SEARCH_QUERY = "search_query"
+        private const val TAG = "@@@SearchResults@"
     }
 }
