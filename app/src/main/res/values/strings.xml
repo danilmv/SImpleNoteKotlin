@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">SImpleNote</string>
+    <string name="app_name">SImpleNote@Kotlin</string>
     <string name="add_note_button">Add Note</string>
     <string name="save_button">Save</string>
     <string name="header_hint">Header:</string>
