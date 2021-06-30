@@ -1,0 +1,21 @@
+<resources>
+    <string name="app_name">SImpleNote</string>
+    <string name="add_note_button">Add Note</string>
+    <string name="save_button">Save</string>
+    <string name="header_hint">Header:</string>
+    <string name="list">list</string>
+    <string name="favorites">favorites</string>
+    <string name="settings">settings</string>
+    <string name="content">content:</string>
+    <string name="type">type:</string>
+    <string name="delete_menu_item">delete note</string>
+    <string name="text_note">Text-note</string>
+    <string name="sign_in">sign in</string>
+    <string name="sing_out">sing out</string>
+    <string name="delete_all">Delete all</string>
+    <string name="Yes">Yes</string>
+    <string name="Cancel">Cancel</string>
+    <string name="delete_dialog_header">Delete every notes!</string>
+    <string name="delete_dialog_message">Are you sure?</string>
+    <string name="search">Search</string>
+</resources>

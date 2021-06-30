@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="items_margin">10dp</dimen>
+    <dimen name="button_text_size">22sp</dimen>
+    <dimen name="item_text_size">22sp</dimen>
+    <dimen name="item_text_size_small">16sp</dimen>
+    <dimen name="note_text_size">16sp</dimen>
+    <dimen name="text_card_corner_radius">16dp</dimen>
+    <dimen name="card_view_elevation">10dp</dimen>
+    <dimen name="card_content_padding">2dp</dimen>
+</resources>
