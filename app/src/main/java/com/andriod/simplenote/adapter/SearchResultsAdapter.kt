@@ -13,7 +13,7 @@ class SearchResultsAdapter : RecyclerView.Adapter<SearchResultsAdapter.ViewHolde
     private var notes: List<Note> = ArrayList()
     private var listener: OnItemClickListener? = null
 
-    interface OnItemClickListener {
+    fun interface OnItemClickListener {
         fun onItemClick(note: Note)
     }
 
@@ -54,6 +54,7 @@ class SearchResultsAdapter : RecyclerView.Adapter<SearchResultsAdapter.ViewHolde
         private val textViewHeader = itemView.findViewById<TextView>(R.id.text_view_header)
         private val textViewContent = itemView.findViewById<TextView>(R.id.text_view_content)
         private lateinit var note: Note
+
         fun bind(note: Note) {
             this.note = note
             textViewHeader.text = note.header
@@ -61,11 +62,7 @@ class SearchResultsAdapter : RecyclerView.Adapter<SearchResultsAdapter.ViewHolde
         }
 
         init {
-            itemView.setOnClickListener {
-                if (listener != null) {
-                    listener!!.onItemClick(note)
-                }
-            }
+            itemView.setOnClickListener { listener?.onItemClick(note) }
         }
     }
 

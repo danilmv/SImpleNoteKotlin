@@ -15,9 +15,6 @@ class PreferencesDataManager(preferences: SharedPreferences) : BaseDataManager()
         this.sharedPreferences = sharedPreferences
     }
 
-    override val data: Map<String, Note>
-        get() = notes
-
     override fun updateData(note: Note) {
         val id = note.id
         if (id == INIT_ID || id.isEmpty()) note.id = UUID.randomUUID().toString()

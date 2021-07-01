@@ -15,7 +15,6 @@ class Note : Parcelable {
 
     enum class NoteType(val value: Int) {
         Text(0), HTTP(1), Video(2);
-
     }
 
     var type: NoteType
@@ -28,7 +27,7 @@ class Note : Parcelable {
         this.date = date
     }
 
-    protected constructor(`in`: Parcel) {
+    private constructor(`in`: Parcel) {
         id = `in`.readString() ?: INIT_ID
         header = `in`.readString()
         date = `in`.readLong()
@@ -51,22 +50,21 @@ class Note : Parcelable {
     }
 
     val shortContent: String?
-        get() = if (content == null || content!!.isEmpty() || content!!.length <= SHORT_CONTENT_LENGTH) content else String.format(
-            "%s...",
-            content!!.substring(0, SHORT_CONTENT_LENGTH)
-        )
+        get() = if (content == null || content!!.isEmpty() || content!!.length <= SHORT_CONTENT_LENGTH) content
+        else String.format("%s...", content!!.substring(0, SHORT_CONTENT_LENGTH))
 
     fun checkSearch(searchQuery: String?): Boolean {
         if (searchQuery == null || searchQuery.isEmpty()) return false
-        return if (header != null && header!!.contains(searchQuery)) true else content != null && content!!.contains(
-            searchQuery
-        )
+        return (header != null && header!!.contains(searchQuery))
+                || (content != null && content!!.contains(searchQuery))
     }
 
     companion object {
         private const val SHORT_CONTENT_LENGTH = 30
         private const val TAG = "@@@Note@"
-        @JvmField val CREATOR: Creator<Note> = object : Creator<Note> {
+
+        @JvmField
+        val CREATOR: Creator<Note> = object : Creator<Note> {
             override fun createFromParcel(`in`: Parcel): Note {
                 return Note(`in`)
             }

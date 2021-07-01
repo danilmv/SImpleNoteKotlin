@@ -6,7 +6,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.View.OnCreateContextMenuListener
 import android.view.ViewGroup
-import android.widget.CompoundButton
 import android.widget.TextView
 import android.widget.ToggleButton
 import androidx.recyclerview.widget.RecyclerView
@@ -31,12 +30,16 @@ class ListNotesAdapter : RecyclerView.Adapter<BaseViewHolder>() {
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): BaseViewHolder {
-        return if (viewType == VIDEO_TYPE) {
-            VideoViewHolder(parent, listener)
-        } else if (viewType == HTTP_TYPE) {
-            HttpViewHolder(parent, listener)
-        } else {
-            TextViewHolder(parent, listener)
+        return when (viewType) {
+            VIDEO_TYPE -> {
+                VideoViewHolder(parent, listener)
+            }
+            HTTP_TYPE -> {
+                HttpViewHolder(parent, listener)
+            }
+            else -> {
+                TextViewHolder(parent, listener)
+            }
         }
     }
 
@@ -55,9 +58,9 @@ class ListNotesAdapter : RecyclerView.Adapter<BaseViewHolder>() {
     abstract inner class BaseViewHolder(itemView: View, listener: OnItemClickListener?) :
         RecyclerView.ViewHolder(itemView), OnCreateContextMenuListener {
         protected lateinit var note: Note
-        protected val toggleFavorite = itemView.findViewById<ToggleButton>(R.id.toggle_favorite)
-        protected val textViewHeader = itemView.findViewById<TextView>(R.id.text_view_header)
-        protected val textViewContent = itemView.findViewById<TextView>(R.id.text_view_content)
+        private val toggleFavorite: ToggleButton = itemView.findViewById(R.id.toggle_favorite)
+        private val textViewHeader: TextView = itemView.findViewById(R.id.text_view_header)
+        private val textViewContent: TextView = itemView.findViewById(R.id.text_view_content)
         private var isBinding = false
 
         fun bind(note: Note) {
@@ -75,12 +78,10 @@ class ListNotesAdapter : RecyclerView.Adapter<BaseViewHolder>() {
         }
 
         init {
-            itemView.setOnClickListener { v: View? -> listener?.onItemClick(note) }
-            toggleFavorite.setOnCheckedChangeListener { _: CompoundButton?, isChecked: Boolean ->
+            itemView.setOnClickListener { listener?.onItemClick(note) }
+            toggleFavorite.setOnCheckedChangeListener { _, isChecked: Boolean ->
                 note.isFavorite = isChecked
-                if (listener != null && !isBinding) {
-                    listener.onFavorite(note)
-                }
+                if (!isBinding) listener?.onFavorite(note)
             }
             itemView.setOnCreateContextMenuListener(this)
         }

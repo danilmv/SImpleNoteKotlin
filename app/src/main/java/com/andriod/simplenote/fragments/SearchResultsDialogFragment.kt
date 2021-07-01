@@ -1,7 +1,6 @@
 package com.andriod.simplenote.fragments
 
 import android.content.Context
-import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -16,13 +15,13 @@ import com.andriod.simplenote.data.BaseDataManager
 import com.andriod.simplenote.entity.Note
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import java.util.*
-import java.util.stream.Collectors
 
 class SearchResultsDialogFragment : BottomSheetDialogFragment() {
-    private lateinit var adapter: SearchResultsAdapter
+    private var adapter: SearchResultsAdapter? = null
     private var notes: Map<String, Note>? = null
     private var dataManager: BaseDataManager? = null
     private var searchQuery: String? = null
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -38,14 +37,9 @@ class SearchResultsDialogFragment : BottomSheetDialogFragment() {
         recyclerView.layoutManager = LinearLayoutManager(context)
         adapter = SearchResultsAdapter()
 
-        adapter.setListener(object : SearchResultsAdapter.OnItemClickListener{
-            override fun onItemClick(note: Note) {
-                controller.let {
-                    controller?.showSearchNote(note)
-                }
-            }
-        })
-//        adapter.setListener({ note:Note -> controller.let { controller.showSearchNote(note) } })
+        adapter?.setListener { note ->
+            controller?.showSearchNote(note)
+        }
         recyclerView.adapter = adapter
         showList()
     }
@@ -53,23 +47,20 @@ class SearchResultsDialogFragment : BottomSheetDialogFragment() {
     private fun showList() {
         Log.d(TAG, "showList() called")
         val dataManager = getDataManager()
-        dataManager.let {
-            notes = getDataManager()?.data
+        dataManager?.let {
+            notes = it.data
         }
         Log.d(TAG, String.format("showList(): dataManager=[%s]", dataManager))
         val arguments = arguments ?: return
         searchQuery = arguments.getString(ARGUMENTS_SEARCH_QUERY)
-        if (notes == null || searchQuery == null || searchQuery!!.isEmpty()) return
-        val list: List<Note>
-        list = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            notes!!.values.stream()
-                .filter { note: Note? -> note!!.checkSearch(searchQuery) }
-                .collect(Collectors.toList())
-        } else {
-            ArrayList(notes!!.values)
+        if (notes == null || searchQuery == null || searchQuery!!.isEmpty() || adapter == null) return
+
+        notes?.let {
+            val list = it.values.filter { note: Note -> note.checkSearch(searchQuery) }
+                .toCollection(ArrayList<Note>())
+            Log.d(TAG, String.format("showList(): list.size=[%d]", list.size))
+            adapter?.setData(list)
         }
-        Log.d(TAG, String.format("showList(): list.size=[%d]", list.size))
-        adapter.setData(list)
     }
 
     override fun onAttach(context: Context) {
@@ -90,17 +81,16 @@ class SearchResultsDialogFragment : BottomSheetDialogFragment() {
     fun setSearchQuery(searchQuery: String) {
         Log.d(TAG, "setSearchQuery() called with: searchQuery = [$searchQuery]")
         this.searchQuery = searchQuery
-        var bundle = arguments
-        if (bundle == null) {
-            bundle = Bundle()
-        }
+
+        val bundle = arguments ?: Bundle()
         bundle.clear()
         bundle.putString(ARGUMENTS_SEARCH_QUERY, searchQuery)
         arguments = bundle
+
         showList()
     }
 
-    interface Controller {
+    fun interface Controller {
         fun showSearchNote(note: Note)
     }
 

@@ -9,9 +9,6 @@ class FirestoreDataManager : BaseDataManager() {
     private val db = FirebaseFirestore.getInstance()
     private var collection: String? = null
 
-    override val data: Map<String, Note>
-        get() = notes
-
     override fun updateData(note: Note) {
         val id = note.id
         if (id == INIT_ID || id.isEmpty()) {
@@ -61,7 +58,7 @@ class FirestoreDataManager : BaseDataManager() {
         this.user = user
         collection = String.format("notes/users/%s", user)
         db.collection(collection!!)
-            .addSnapshotListener { value: QuerySnapshot?, error: FirebaseFirestoreException? ->
+            .addSnapshotListener { value: QuerySnapshot?, _: FirebaseFirestoreException? ->
                 if (value == null) return@addSnapshotListener
                 for (documentChange in value.documentChanges) {
                     val note = documentChange.document.toObject(

@@ -16,14 +16,13 @@ import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
-import com.google.android.gms.tasks.Task
 import com.google.android.material.bottomnavigation.BottomNavigationView
 
 class MainActivity : AppCompatActivity(), ListNotesFragment.Controller, NoteFragment.Controller,
     SettingsFragment.Controller, SearchResultsDialogFragment.Controller {
     private var hasSecondContainer = false
     private lateinit var bottomNavigationView: BottomNavigationView
-    private var googleSignInClient: GoogleSignInClient? = null
+    private lateinit var googleSignInClient: GoogleSignInClient
     override var userName: String? = null
         private set
     private var searchResultsDialogFragment: SearchResultsDialogFragment? = null
@@ -40,14 +39,19 @@ class MainActivity : AppCompatActivity(), ListNotesFragment.Controller, NoteFrag
                 TAG,
                 String.format("setOnNavigationItemSelectedListener() called: %s", item.title)
             )
-            if (itemId == R.id.menu_bottom_item_list) {
-                showList(false)
-            } else if (itemId == R.id.menu_bottom_item_favorites) {
-                showList(true)
-            } else if (itemId == R.id.menu_bottom_item_settings) {
-                showSettings()
-            } else {
-                return@setOnNavigationItemSelectedListener false
+            when (itemId) {
+                R.id.menu_bottom_item_list -> {
+                    showList(false)
+                }
+                R.id.menu_bottom_item_favorites -> {
+                    showList(true)
+                }
+                R.id.menu_bottom_item_settings -> {
+                    showSettings()
+                }
+                else -> {
+                    return@setOnNavigationItemSelectedListener false
+                }
             }
             true
         }
@@ -59,11 +63,9 @@ class MainActivity : AppCompatActivity(), ListNotesFragment.Controller, NoteFrag
             return
         }
         Log.d(TAG, "showList() called with: showOnlyFavorites = [$showOnlyFavorites]")
-        var fragment = supportFragmentManager
-            .findFragmentByTag(FRAGMENT_LIST_NOTES) as ListNotesFragment?
-        if (fragment == null) {
-            fragment = ListNotesFragment()
-        }
+        val fragment = (supportFragmentManager.findFragmentByTag(FRAGMENT_LIST_NOTES)
+            ?: ListNotesFragment()) as ListNotesFragment
+
         supportFragmentManager
             .beginTransaction()
             .replace(R.id.main_fragment_container, fragment, FRAGMENT_LIST_NOTES)
@@ -111,8 +113,7 @@ class MainActivity : AppCompatActivity(), ListNotesFragment.Controller, NoteFrag
 
     private fun setBottomView(bottomItemId: Int) {
         Log.d(TAG, "setBottomView() called with: bottomItemId = [$bottomItemId]")
-        val item = bottomNavigationView.menu.findItem(bottomItemId)
-        if (item != null) item.isChecked = true
+        bottomNavigationView.menu.findItem(bottomItemId)?.isChecked = true
     }
 
     override fun onResume() {
@@ -128,30 +129,20 @@ class MainActivity : AppCompatActivity(), ListNotesFragment.Controller, NoteFrag
             .requestEmail()
             .build()
         googleSignInClient = GoogleSignIn.getClient(this, gso)
-        var account = gso.account
-        if (account == null) {
-            val googleAccount = GoogleSignIn.getLastSignedInAccount(this)
-            if (googleAccount != null) {
-                account = googleAccount.account
-            }
-        }
-        if (account != null) {
-            userName = account.name
-            dataManager.setUser(userName)
-            Log.d(TAG, String.format("AUTHORIZED as [%s]", userName))
-        }
+        userName = (gso.account ?: GoogleSignIn.getLastSignedInAccount(this)?.account)?.name
+        dataManager.setUser(userName)
+        Log.d(TAG, String.format("AUTHORIZED as [%s]", userName))
         showList(false)
     }
 
     override fun signIn() {
-        startActivityForResult(googleSignInClient!!.signInIntent, CODE_SIGN_IN)
+        startActivityForResult(googleSignInClient.signInIntent, CODE_SIGN_IN)
     }
 
     override fun signOut() {
         Log.d(TAG, String.format("signOut() called: [%s sign out]", userName))
         userName = null
-        googleSignInClient!!.signOut()
-            .addOnCompleteListener { task: Task<Void?>? -> showSettings() }
+        googleSignInClient.signOut().addOnCompleteListener { showSettings() }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -159,13 +150,11 @@ class MainActivity : AppCompatActivity(), ListNotesFragment.Controller, NoteFrag
         if (requestCode == CODE_SIGN_IN && resultCode == RESULT_OK) {
             val task = GoogleSignIn.getSignedInAccountFromIntent(data)
             try {
-                val account = task.getResult(ApiException::class.java)
-                if (account != null && account.account != null) {
-                    userName = account.account!!.name
-                    Log.d(TAG, String.format("AUTHORIZED as [%s]", userName))
-                }
+                userName = task.getResult(ApiException::class.java)?.account?.name
+                Log.d(TAG, String.format("AUTHORIZED as [%s]", userName))
             } catch (e: ApiException) {
-                e.printStackTrace()
+                Log.d(TAG,
+                    String.format("onActivityResult() called with error: [%s]", e.message))
             }
             if (userName != null && !userName!!.isEmpty()) {
                 dataManager.setUser(userName)

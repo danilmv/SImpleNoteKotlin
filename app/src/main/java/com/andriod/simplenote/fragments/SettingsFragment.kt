@@ -2,7 +2,6 @@ package com.andriod.simplenote.fragments
 
 import android.app.AlertDialog
 import android.content.Context
-import android.content.DialogInterface
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -15,47 +14,34 @@ class SettingsFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
-        savedInstanceState: Bundle?
+        savedInstanceState: Bundle?,
     ): View? {
         return inflater.inflate(R.layout.fragment_settings, container, false)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        var userName: String? = null
-        if (controller != null) {
-            userName = controller!!.userName
-        }
+        val userName: String? = controller?.userName
+        val signedIn = userName != null && userName.isNotEmpty()
+
         val buttonDelete = view.findViewById<Button>(R.id.button_delete_all)
-        buttonDelete.setOnClickListener { v: View? ->
-            AlertDialog.Builder(
-                context
-            )
+        buttonDelete.setOnClickListener {
+            AlertDialog.Builder(context)
                 .setTitle(R.string.delete_dialog_header)
                 .setMessage(R.string.delete_dialog_message)
-                .setPositiveButton(R.string.Yes) { dialog: DialogInterface?, which: Int ->
-                    if (controller != null) {
-                        controller!!.deleteAll()
-                    }
-                }
+                .setPositiveButton(R.string.Yes) { _, _ -> controller?.deleteAll() }
                 .setNegativeButton(R.string.Cancel, null)
                 .show()
         }
-        buttonDelete.isEnabled = userName != null && !userName.isEmpty()
+        buttonDelete.isEnabled = signedIn
+
         val buttonSignIn = view.findViewById<Button>(R.id.button_sign_in)
-        buttonSignIn.setOnClickListener { v: View? ->
-            if (controller != null) {
-                controller!!.signIn()
-            }
-        }
-        buttonSignIn.isEnabled = userName == null || userName.isEmpty()
+        buttonSignIn.setOnClickListener { controller?.signIn() }
+        buttonSignIn.isEnabled = !signedIn
+
         val buttonSignOut = view.findViewById<Button>(R.id.button_sign_out)
-        buttonSignOut.setOnClickListener { v: View? ->
-            if (controller != null) {
-                controller!!.signOut()
-            }
-        }
-        buttonSignOut.isEnabled = userName != null && !userName.isEmpty()
+        buttonSignOut.setOnClickListener { controller?.signOut() }
+        buttonSignOut.isEnabled = signedIn
     }
 
     override fun onAttach(context: Context) {

@@ -19,6 +19,7 @@ class NoteFragment : Fragment() {
     private lateinit var editTextHeader: EditText
     private lateinit var editTextContent: EditText
     private lateinit var spinner: Spinner
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -29,23 +30,27 @@ class NoteFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        arguments.let {
-            note = arguments?.getParcelable(NOTE_EXTRA_KEY)!!
+        arguments?.let {
+            note = it.getParcelable(NOTE_EXTRA_KEY)!!
             showContent(view)
         }
+
         editTextHeader = view.findViewById(R.id.edit_text_header)
         editTextHeader.setText(note.header)
+
         val toggleButtonFavorite = view.findViewById<ToggleButton>(R.id.toggle_favorite)
         toggleButtonFavorite.isChecked = note.isFavorite
+
         view.findViewById<View>(R.id.button_save_note).setOnClickListener {
-            if (controller != null) {
+            controller?.let {
                 note.header = editTextHeader.text.toString()
                 note.isFavorite = toggleButtonFavorite.isChecked
                 note.type = NoteType.valueOf(spinner.selectedItem.toString())
                 note.content = editTextContent.text.toString()
-                controller!!.noteSaved(note)
+                it.noteSaved(note)
             }
         }
+
         spinner = view.findViewById(R.id.spinner_note_type)
         val spinnerValues = listOf(*NoteType.values())
         val adapter =
@@ -55,6 +60,7 @@ class NoteFragment : Fragment() {
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         spinner.adapter = adapter
         spinner.setSelection(adapter.getPosition(note.type))
+
         editTextContent = view.findViewById(R.id.edit_text_content)
         editTextContent.setText(note.content)
     }
@@ -64,30 +70,31 @@ class NoteFragment : Fragment() {
         container.removeAllViews()
         val content = note.content
         if (content == null || content.isEmpty()) return
+
         when (note.type) {
             NoteType.Text -> {
             }
             NoteType.Video -> {
-                val videoView = VideoView(context)
-                videoView.setVideoURI(Uri.parse(content))
-                videoView.setOnPreparedListener {
-                    val mediaController = MediaController(
-                        context
-                    )
-                    videoView.setMediaController(mediaController)
-                    mediaController.setAnchorView(videoView)
+                VideoView(context).apply {
+                    setVideoURI(Uri.parse(content))
+                    setOnPreparedListener {
+                        val mediaController = MediaController(context)
+                        setMediaController(mediaController)
+                        mediaController.setAnchorView(this)
+                    }
+                    container.addView(this)
+                    start()
                 }
-                container.addView(videoView)
-                videoView.start()
             }
             NoteType.HTTP -> {
-                val webView = WebView(requireContext())
-                webView.webViewClient = WebViewClient()
-                webView.setInitialScale(70)
-                webView.settings.loadWithOverviewMode = true
-                webView.settings.useWideViewPort = true
-                container.addView(webView)
-                webView.loadUrl(content)
+                WebView(requireContext()).apply {
+                    webViewClient = WebViewClient()
+                    setInitialScale(70)
+                    settings.loadWithOverviewMode = true
+                    settings.useWideViewPort = true
+                    container.addView(this)
+                    loadUrl(content)
+                }
             }
         }
     }
@@ -100,7 +107,7 @@ class NoteFragment : Fragment() {
         check(context is ListNotesFragment.Controller) { "Activity must implement Controller" }
     }
 
-    interface Controller {
+    fun interface Controller {
         fun noteSaved(note: Note)
     }
 

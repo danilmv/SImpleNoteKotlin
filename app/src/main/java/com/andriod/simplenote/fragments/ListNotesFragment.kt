@@ -1,7 +1,6 @@
 package com.andriod.simplenote.fragments
 
 import android.content.Context
-import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -19,7 +18,6 @@ import com.andriod.simplenote.data.BaseDataManager
 import com.andriod.simplenote.entity.Note
 import com.andriod.simplenote.entity.Note.NoteType
 import java.util.*
-import java.util.stream.Collectors
 
 class ListNotesFragment : Fragment(), ListNotesAdapter.OnItemClickListener {
     private var notes: Map<String, Note>? = null
@@ -27,8 +25,7 @@ class ListNotesFragment : Fragment(), ListNotesAdapter.OnItemClickListener {
     private var dataManager: BaseDataManager? = null
         get() {
             if (field == null) {
-                val application = requireActivity().application as NoteApplication
-                field = application.dataManager
+                field = (requireActivity().application as NoteApplication).dataManager
             }
             return field
         }
@@ -74,11 +71,11 @@ class ListNotesFragment : Fragment(), ListNotesAdapter.OnItemClickListener {
             val popupMenu = PopupMenu(context, v)
             val menu = popupMenu.menu
             for (value in NoteType.values()) {
-                val item = menu.add(value.name)
-                item.setOnMenuItemClickListener {
-                    controller!!.changeNote(Note(value))
-                    true
-                }
+                menu.add(value.name)
+                    .setOnMenuItemClickListener {
+                        controller!!.changeNote(Note(value))
+                        true
+                    }
             }
             popupMenu.show()
         }
@@ -88,12 +85,12 @@ class ListNotesFragment : Fragment(), ListNotesAdapter.OnItemClickListener {
         Log.d(TAG, "onAttach() called")
         super.onAttach(context)
         check(context is Controller) { "Activity must implement Controller" }
-        dataManager!!.subscribe(subscriber)
+        dataManager?.subscribe(subscriber)
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        dataManager!!.unSubscribe(subscriber)
+        dataManager?.unSubscribe(subscriber)
     }
 
     private fun loadData() {
@@ -105,15 +102,11 @@ class ListNotesFragment : Fragment(), ListNotesAdapter.OnItemClickListener {
         get() = activity as Controller?
 
     override fun onItemClick(note: Note) {
-        if (controller != null) {
-            controller!!.changeNote(note)
-        }
+        controller?.changeNote(note)
     }
 
     override fun onFavorite(note: Note) {
-        if (controller != null) {
-            controller!!.noteSaved(note)
-        }
+        controller?.noteSaved(note)
     }
 
     interface Controller {
@@ -126,19 +119,17 @@ class ListNotesFragment : Fragment(), ListNotesAdapter.OnItemClickListener {
             TAG,
             String.format(
                 "showList() called for note.size = [%d]",
-                if (notes != null) notes!!.size else 0
+                notes?.size ?: 0
             )
         )
         if (adapter == null) return
         if (notes == null) loadData()
-        val list: List<Note> = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            notes!!.values.stream()
-                .filter { note: Note -> !showOnlyFavorites || note.isFavorite }
-                .collect(Collectors.toList())
-        } else {
-            ArrayList(notes!!.values)
+
+        notes?.let {
+            val list = it.values.filter { note: Note -> !showOnlyFavorites || note.isFavorite }
+                .toCollection(ArrayList<Note>())
+            adapter?.setData(list)
         }
-        adapter?.setData(list)
     }
 
     fun setMode(showOnlyFavorites: Boolean) {
@@ -147,8 +138,8 @@ class ListNotesFragment : Fragment(), ListNotesAdapter.OnItemClickListener {
     }
 
     override fun onContextItemSelected(item: MenuItem): Boolean {
-        adapter.let {
-            val note = adapter!!.currentNote
+        adapter?.let {
+            val note = it.currentNote
             Log.d(TAG, String.format("note [%s] was deleted", note.header))
             dataManager?.deleteData(note)
         }

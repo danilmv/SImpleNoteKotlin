@@ -8,7 +8,10 @@ abstract class BaseDataManager {
     protected var notes: MutableMap<String, Note> = HashMap()
     internal var user: String? = null
 
-    abstract val data: Map<String, Note>
+    //    abstract val data: Map<String, Note>
+    val data: Map<String, Note>
+        get() = notes
+
     abstract fun updateData(note: Note)
     abstract fun deleteData(note: Note)
     abstract fun deleteAll()
