@@ -34,12 +34,11 @@ class MainActivity : AppCompatActivity(), ListNotesFragment.Controller, NoteFrag
         hasSecondContainer = findViewById<View?>(R.id.second_fragment_container) != null
         bottomNavigationView = findViewById(R.id.bottom_view)
         bottomNavigationView.setOnNavigationItemSelectedListener { item: MenuItem ->
-            val itemId = item.itemId
             Log.d(
                 TAG,
                 String.format("setOnNavigationItemSelectedListener() called: %s", item.title)
             )
-            when (itemId) {
+            when (item.itemId) {
                 R.id.menu_bottom_item_list -> {
                     showList(false)
                 }
@@ -58,13 +57,14 @@ class MainActivity : AppCompatActivity(), ListNotesFragment.Controller, NoteFrag
     }
 
     private fun showList(showOnlyFavorites: Boolean) {
-        if (userName == null || userName!!.isEmpty()) {
+        if (userName?.isEmpty() != false) {
             signIn()
             return
         }
         Log.d(TAG, "showList() called with: showOnlyFavorites = [$showOnlyFavorites]")
-        val fragment = (supportFragmentManager.findFragmentByTag(FRAGMENT_LIST_NOTES)
-            ?: ListNotesFragment()) as ListNotesFragment
+        val fragment =
+            supportFragmentManager.findFragmentByTag(FRAGMENT_LIST_NOTES) as? ListNotesFragment
+                ?: ListNotesFragment()
 
         supportFragmentManager
             .beginTransaction()
@@ -156,7 +156,7 @@ class MainActivity : AppCompatActivity(), ListNotesFragment.Controller, NoteFrag
                 Log.d(TAG,
                     String.format("onActivityResult() called with error: [%s]", e.message))
             }
-            if (userName != null && !userName!!.isEmpty()) {
+            if (userName?.isEmpty() == false) {
                 dataManager.setUser(userName)
                 showList(false)
             }
@@ -180,16 +180,18 @@ class MainActivity : AppCompatActivity(), ListNotesFragment.Controller, NoteFrag
     }
 
     private fun showQueryResults(newText: String?) {
-        if (newText == null || newText.isEmpty()) return
+        if (newText?.isEmpty() != false) return
         if (searchResultsDialogFragment == null) {
             searchResultsDialogFragment = SearchResultsDialogFragment()
         }
-        searchResultsDialogFragment!!.show(supportFragmentManager, FRAGMENT_SEARCH_RESULTS)
-        searchResultsDialogFragment!!.setSearchQuery(newText)
+        searchResultsDialogFragment?.let {
+            it.show(supportFragmentManager, FRAGMENT_SEARCH_RESULTS)
+            it.setSearchQuery(newText)
+        }
     }
 
     override fun showSearchNote(note: Note) {
-        searchResultsDialogFragment!!.dismiss()
+        searchResultsDialogFragment?.dismiss()
         changeNote(note)
     }
 
